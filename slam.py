@@ -4,6 +4,7 @@ import numpy as np
 from frame import Frame
 from skimage.measure import ransac 
 from skimage.transform import EssentialMatrixTransform
+from display import Display2D
 
 
 W = 640
@@ -93,17 +94,17 @@ class Slam:
 
 
 if __name__ == '__main__':
-    # import video
-    cap = cv2.VideoCapture('data/test_countryroad.mp4')
-    frames_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    print('Total Frames: %d ' %(frames_count))
+    # Initalize Display2D
+    display2D = Display2D('data/test_countryroad.mp4')
 
+    # import video
     slam = Slam(W,H)
     
     # Video Start
     i = 0
-    while(cap.isOpened()):
-        ret, frame = cap.read()
+    frames_count = display2D.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    while(display2D.cap.isOpened()):
+        ret, frame = display2D.cap.read()
         if ret is not False:
             print('*** Frame %d/%d ***' %(i, frames_count))
             frame = slam.process_Frame(frame)

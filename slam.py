@@ -42,7 +42,13 @@ class Slam:
         # Match two frames
         if len(self.frames) > 1:
             f1,f2 = self.frames[-2],self.frames[-1]
-            match_pts1,match_pts2 = self.match_frames(f1,f2)
+            match_pts1,match_pts2,f1,f2 = self.match_frames(f1,f2)
+            f2.marked = display2D.annotate2D(f1,f2)
+
+            # add processed frame to slam frames list
+            self.frames[-1] = f2
+            self.frames[-2] = f1
+            frame = f2
 
         return frame
 
@@ -82,7 +88,10 @@ class Slam:
         match_points1 = pts_ransac1[inliers]
         match_points2 = pts_ransac2[inliers]
 
-        return [match_points1,match_points2]
+        # build cv2.KeyPoint list in each frame
+        f1.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points1]
+        f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
+        return [match_points1,match_points2,f1,f2]
 
 
         

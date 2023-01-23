@@ -5,8 +5,12 @@ class Frame():
     def __init__(self,img):
         # Initalize variable
         self.img = img 
+        # marked img
+        self.marked = None 
         # compute keypoints and descriptors
         self.Add_keyPoints(img)
+        # The point matches with last frame
+        self.match_points = None
 
         
    

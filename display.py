@@ -25,10 +25,13 @@ class Display2D():
 
         # TODO: use blue line to annotate the track of the keypoints
         for i in range(len(frame1.match_points)):
+            # distance1 = frame1.match_points[i].pt[0] - frame2.match_points[i].pt[0]
+            # distance2 = frame1.match_points[i].pt[1] - frame2.match_points[i].pt[1]
+            # print('distance x %d  --- distance y %d' %(distance1,distance2))
             ret = cv2.line(ret,
-                           (int(frame1.match_points[i].pt[0]),int(frame1.match_points[i].pt[1])),
-                           (int(frame2.match_points[i].pt[1]),int(frame2.match_points[i].pt[1])),
-                           (255,0,0),
-                           1)
+                          (int(round(frame1.match_points[i].pt[0])),int(round(frame1.match_points[i].pt[1]))),
+                          (int(round(frame2.match_points[i].pt[0])),int(round(frame2.match_points[i].pt[1]))),
+                          (255,0,0),
+                          1)
 
         return ret

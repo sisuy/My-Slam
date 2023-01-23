@@ -34,7 +34,7 @@ class Slam:
         frame = self.Transform(frame)
         # frame = self.normalize(frame)
 
-        frame =Frame(frame)
+        frame = Frame(frame)
         
         # Add frames to Slam
         self.frames.append(frame)
@@ -57,7 +57,7 @@ class Slam:
         matches = bf_matcher.match(f1.descriptors,f2.descriptors)
 
         # Find good features according to distance
-        good = sorted(matches,key=lambda x:x.distance)[:70]
+        good = sorted(matches,key=lambda x:x.distance)[:50]
 
         # Use ransac to filt outliers
         pts_ransac1 = []
@@ -92,14 +92,6 @@ class Slam:
         f1.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points1]
         f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
         return [match_points1,match_points2,f1,f2]
-
-
-        
-    # Use to draw the match_points in a frame
-    def plot_match(self,img1,img2, pts1, pts2,matches):
-        ret = cv2.drawKeypoints(img2,pts2,None,(255,0,0),None)
-
-        return ret
 
 
 if __name__ == '__main__':

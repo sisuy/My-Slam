@@ -27,7 +27,7 @@ class Slam:
         frame = cv2.resize(frame,(W,H))
         return frame
         
-    def process_Frame(self,frame):
+    def process_frame(self,frame):
         # Not allow none frame
         assert frame is not None    
 
@@ -35,6 +35,7 @@ class Slam:
         # frame = self.normalize(frame)
 
         frame = Frame(frame)
+        print('--- Found %d keypoints ---'% len(frame.keyPoints))
         
         # Add frames to Slam
         self.frames.append(frame)
@@ -57,7 +58,7 @@ class Slam:
         matches = bf_matcher.match(f1.descriptors,f2.descriptors)
 
         # Find good features according to distance
-        good = sorted(matches,key=lambda x:x.distance)[:50]
+        good = sorted(matches,key=lambda x:x.distance)[:70]
 
         # Use ransac to filt outliers
         pts_ransac1 = []
@@ -108,7 +109,7 @@ if __name__ == '__main__':
         ret, frame = display2D.cap.read()
         if ret is not False:
             print('*** Frame %d/%d ***' %(i, frames_count))
-            frame = slam.process_Frame(frame)
+            frame = slam.process_frame(frame)
             cv2.imshow('frame',frame.img)
 
             # Press q to exit the video 

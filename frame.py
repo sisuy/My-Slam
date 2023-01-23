@@ -16,16 +16,16 @@ class Frame():
    
     def Add_keyPoints(self,img): 
         orb = cv2.ORB_create(nfeatures=None,
-                             scaleFactor =1.2,
-                             nlevels=6,
+                             scaleFactor =0.9,
+                             nlevels=8,
                              edgeThreshold=40,
-                             firstLevel=5,
+                             firstLevel=6,
                              patchSize=50
                              ) 
 
         # Find interesting key points
         img = np.mean(img,axis=2).astype(np.uint8)
-        pts = cv2.goodFeaturesToTrack(img,500,0.1,10)
+        pts = cv2.goodFeaturesToTrack(img,1000,0.1,10)
 
         kps = [cv2.KeyPoint(x = i[0][0], y = i[0][1],size = 0) for i in pts]
         kps,des = orb.compute(img,kps)

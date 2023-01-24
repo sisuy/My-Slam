@@ -25,7 +25,7 @@ class Frame():
 
         # Find interesting key points
         img = np.mean(img,axis=2).astype(np.uint8)
-        pts = cv2.goodFeaturesToTrack(img,1000,0.1,10)
+        pts = cv2.goodFeaturesToTrack(img,3000,0.01,7)
 
         kps = [cv2.KeyPoint(x = i[0][0], y = i[0][1],size = 0) for i in pts]
         kps,des = orb.compute(img,kps)

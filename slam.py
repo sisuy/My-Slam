@@ -3,8 +3,9 @@ import cv2
 import numpy as np
 from frame import Frame
 from skimage.measure import ransac 
-from skimage.transform import EssentialMatrixTransform
+from skimage.transform import EssentialMatrixTransform,FundamentalMatrixTransform
 from display import Display2D
+import sys
 
 
 W = 640
@@ -12,10 +13,16 @@ H = 400
 
 
 class Slam:
-    def __init__(self,W,H):
+    def __init__(self,W,H,F,intrinsic,extrinsic):
+        self.F = F
         self.W = W
         self.H = H
         self.points = []
+
+        # Camara Intrinsic and Camara extrinsic
+        self.intrinsic = intrinsic
+        self.extrinsic = extrinsic
+
 
         # Frames
         self.frames = []
@@ -25,12 +32,29 @@ class Slam:
 
     def Transform(self,frame):
         frame = cv2.resize(frame,(W,H))
-        return frame
+        return frame 
+    
+    def estimate_pose(self,frame,E): 
+        U,D,VT = np.linalg.svd(E) 
+        W = np.array([[0,-1,0], 
+                      [1,0,0],
+                      [0,0,1]])
         
+        # u3 is U[:,2]
+        T = U[:,2]
+        # Rotation matrix
+        R = np.dot(np.dot(U,W),VT)
+        print(np.dot(R,R.T))
+
+        # if the det(R) = -1, correct the rotation matrix and  transpose matrix
+        if round(np.linalg.det(R)) == -1:
+            T = -T
+            R = -R
+        return R,T.T
+
     def process_frame(self,frame):
         # Not allow none frame
         assert frame is not None    
-
         frame = self.Transform(frame)
         # frame = self.normalize(frame)
 
@@ -43,8 +67,11 @@ class Slam:
         # Match two frames
         if len(self.frames) > 1:
             f1,f2 = self.frames[-2],self.frames[-1]
-            match_pts1,match_pts2,f1,f2 = self.match_frames(f1,f2)
+            match_pts1,match_pts2,f1,f2,E = self.match_frames(f1,f2)
             f2.marked = display2D.annotate2D(f1,f2)
+
+            # Estimate Camara pose
+            pose = self.estimate_pose(f2,E)
 
             # add processed frame to slam frames list
             self.frames[-1] = f2
@@ -78,13 +105,25 @@ class Slam:
         pts_ransac1 = np.array(pts_ransac1)
         pts_ransac2 = np.array(pts_ransac2)
 
+
         model, inliers =ransac(data=[pts_ransac1,pts_ransac2],
                                model_class=EssentialMatrixTransform,
+                               # model_class=FundamentalMatrixTransform,
                                min_samples=8,
                                residual_threshold=1,
                                max_trials=1000,
                                random_state=None
                                )
+
+        print('-------------- Essential matrix -----------------------')
+        # Rebuild the essential matrix
+        U,S,VT = np.linalg.svd(model.params)
+        rebuild_S = np.array([[S[0],0,0],
+                              [0,S[1],0],
+                              [0,  0 ,0]])
+        E = np.dot(np.dot(U,rebuild_S),VT)
+        print(E)
+        print('------------------------------------------------------')
 
         match_points1 = pts_ransac1[inliers]
         match_points2 = pts_ransac2[inliers]
@@ -92,15 +131,17 @@ class Slam:
         # build cv2.KeyPoint list in each frame
         f1.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points1]
         f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
-        return [match_points1,match_points2,f1,f2]
+        return [match_points1,match_points2,f1,f2,E]
 
 
 if __name__ == '__main__':
+    F = sys.argv[1]
+    path = sys.argv[2]
     # Initalize Display2D
-    display2D = Display2D('data/test_countryroad.mp4')
+    display2D = Display2D(path)
 
     # import video
-    slam = Slam(W,H)
+    slam = Slam(W,H,F,None,None)
     
     # Video Start
     i = 0

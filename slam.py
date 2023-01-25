@@ -4,8 +4,10 @@ import numpy as np
 from frame import Frame
 from skimage.measure import ransac 
 from skimage.transform import EssentialMatrixTransform,FundamentalMatrixTransform
-from display import Display2D
+from display import Display2D,Display3D
 import sys
+import pypangolin as pangolin
+import OpenGL.GL as gl
 
 
 W = 640
@@ -13,11 +15,13 @@ H = 400
 
 
 class Slam:
-    def __init__(self,W,H,F,intrinsic,extrinsic):
+    def __init__(self,W,H,F,intrinsic,extrinsic,path):
         self.F = F
         self.W = W
         self.H = H
         self.points = []
+        self.display2D = Display2D(path)
+        self.display3D = Display3D(self.W,self.H)
 
         # Camara Intrinsic and Camara extrinsic
         self.intrinsic = intrinsic
@@ -68,7 +72,7 @@ class Slam:
         if len(self.frames) > 1:
             f1,f2 = self.frames[-2],self.frames[-1]
             match_pts1,match_pts2,f1,f2,E = self.match_frames(f1,f2)
-            f2.marked = display2D.annotate2D(f1,f2)
+            f2.marked = slam.display2D.annotate2D(f1,f2)
 
             # Estimate Camara pose
             pose = self.estimate_pose(f2,E)
@@ -137,21 +141,19 @@ class Slam:
 if __name__ == '__main__':
     F = sys.argv[1]
     path = sys.argv[2]
-    # Initalize Display2D
-    display2D = Display2D(path)
+    slam = Slam(W,H,F,None,None,path)
 
-    # import video
-    slam = Slam(W,H,F,None,None)
-    
     # Video Start
     i = 0
-    frames_count = display2D.cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    while(display2D.cap.isOpened()):
-        ret, frame = display2D.cap.read()
+    frames_count = slam.display2D.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
+    while(slam.display2D.cap.isOpened()):
+        ret, frame = slam.display2D.cap.read()
         if ret is not False:
             print('*** Frame %d/%d ***' %(i, frames_count))
             frame = slam.process_frame(frame)
             cv2.imshow('frame',frame.img)
+
 
             # Press q to exit the video 
             key = cv2.waitKey(1)

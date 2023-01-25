@@ -8,7 +8,7 @@ from display import Display2D,Display3D
 import sys
 import pypangolin as pangolin
 import OpenGL.GL as gl
-
+from map import Map
 
 W = 640
 H = 400
@@ -19,7 +19,7 @@ class Slam:
         self.F = F
         self.W = W
         self.H = H
-        self.points = []
+        self.map = Map()
         self.display2D = Display2D(path)
         self.display3D = Display3D(self.W,self.H)
 
@@ -29,7 +29,7 @@ class Slam:
 
 
         # Frames
-        self.frames = []
+        # self.frames = []
 
     def add_points(points):
         points.append(points)
@@ -48,13 +48,16 @@ class Slam:
         T = U[:,2]
         # Rotation matrix
         R = np.dot(np.dot(U,W),VT)
-        print(np.dot(R,R.T))
+        # print(np.dot(R,R.T))
 
         # if the det(R) = -1, correct the rotation matrix and  transpose matrix
-        if round(np.linalg.det(R)) == -1:
-            T = -T
-            R = -R
-        return R,T.T
+        # if round(np.linalg.det(R)) == -1:
+        #     T = -T
+        #     R = -R
+        T.shape = (3,1)
+        RT = np.concatenate((R,T),axis = 1)
+        RT = np.concatenate((RT,np.array(([[0,0,0,1]]))),axis = 0)
+        return RT
 
     def process_frame(self,frame):
         # Not allow none frame
@@ -65,24 +68,26 @@ class Slam:
         frame = Frame(frame)
         print('--- Found %d keypoints ---'% len(frame.keyPoints))
         
-        # Add frames to Slam
-        self.frames.append(frame)
+        self.map.frames.append(frame)
+        ret = frame
 
         # Match two frames
-        if len(self.frames) > 1:
-            f1,f2 = self.frames[-2],self.frames[-1]
+        if len(self.map.frames) > 1:
+            f1,f2 = self.map.frames[-2],self.map.frames[-1]
             match_pts1,match_pts2,f1,f2,E = self.match_frames(f1,f2)
-            f2.marked = slam.display2D.annotate2D(f1,f2)
+            f2.img = slam.display2D.annotate2D(f1,f2)
 
             # Estimate Camara pose
-            pose = self.estimate_pose(f2,E)
+            RT = self.estimate_pose(f2,E)
 
-            # add processed frame to slam frames list
-            self.frames[-1] = f2
-            self.frames[-2] = f1
-            frame = f2
+            f2.pose = RT 
 
-        return frame
+            # reset processed frame to slam frames list
+            self.map.frames[-1] = f2
+            self.map.frames[-2] = f1
+            ret = f2
+
+        return ret
 
     def match_frames(self,f1,f2):
         bf_matcher = cv2.BFMatcher(cv2.NORM_HAMMING2,crossCheck=True)
@@ -152,6 +157,7 @@ if __name__ == '__main__':
         if ret is not False:
             print('*** Frame %d/%d ***' %(i, frames_count))
             frame = slam.process_frame(frame)
+            slam.display3D.load_display(slam.map)
             cv2.imshow('frame',frame.img)
 
 

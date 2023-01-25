@@ -2,6 +2,7 @@ import cv2
 import pypangolin as pangolin
 import OpenGL.GL as gl
 from multiprocessing import Process,Queue
+import numpy as np
 
 class Display2D():
     def __init__(self,path):
@@ -36,9 +37,10 @@ class Display2D():
 class Display3D:
     def __init__(self,W,H):
         print("sadasdasdas init")
+        self.state = None # Used to store camera state
         self.W = W
         self.H = H
-        self.q = Queue()
+        self.q = Queue() # q[0]: poses, q[1]: keypoints
         self.vp = Process(target=self.display_thread,args = (self.q,))
         self.vp.daemon = True
         self.vp.start()
@@ -66,35 +68,33 @@ class Display3D:
         self.dcam.Activate(self.scam)
 
     def run(self,q):
+        # load states from queue
+        while not self.q.empty():
+            self.state = q.get()
         pangolin.BindToContext('Viwer')
 
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         self.dcam.Activate(self.scam)
         
-        pangolin.glDrawColouredCube()
-        # draw something
-        gl.glLineWidth(3)
-        # TODO: paint camara pose 
-        gl.glBegin(gl.GL_LINES)
-        gl.glColor3f ( 0.8,0,0 )
-        gl.glVertex3f( -1,-1,-1 )
-        gl.glVertex3f( 0,-1,-1 )
-        gl.glColor3f( 0,0.8,0)
-        gl.glVertex3f( -1,-1,-1 )
-        gl.glVertex3f( -1,0,-1 )
-        gl.glColor3f( 0.2,0.2,1)
-        gl.glVertex3f( -1,-1,-1 )
-        gl.glVertex3f( -1,-1,0 )
-        gl.glEnd()
-        pangolin.FinishFrame()
+        # pangolin.glDrawColouredCube()
+        # Draw previous camara with green color
+        gl.glColor3f(0,1,0)
+        
+        pangolin.DrawCameras(self.state[:-1])
 
-    def display(self):
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-        self.dcam.Activate(self.scam)
+        # Draw current camara with red color
+        gl.glColor3f(1,0,0)
+        pangolin.DrawCameras(self.state[-1:])
 
-        gl.glLineWidth(3)
+        # TODO: Draw keypoints
 
         pangolin.FinishFrame()
-
-
+    
+    def load_display(self,map):
+        poses = []
+        # Add camara poses
+        for f in map.frames:
+            if f.pose is not None:
+                poses.append(f.pose)
+        self.q.put(poses)

@@ -48,16 +48,11 @@ class Slam:
         T = U[:,2]
         # Rotation matrix
         R = np.dot(np.dot(U,W),VT)
-        # print(np.dot(R,R.T))
 
-        # if the det(R) = -1, correct the rotation matrix and  transpose matrix
-        # if round(np.linalg.det(R)) == -1:
-        #     T = -T
-        #     R = -R
-        T.shape = (3,1)
-        RT = np.concatenate((R,T),axis = 1)
-        RT = np.concatenate((RT,np.array(([[0,0,0,1]]))),axis = 0)
-        return RT
+        ret = np.eye(4)
+        ret[:3,:3] = R
+        ret[:3,3] = T.ravel() 
+        return ret
 
     def process_frame(self,frame):
         # Not allow none frame
@@ -131,7 +126,7 @@ class Slam:
                               [0,S[1],0],
                               [0,  0 ,0]])
         E = np.dot(np.dot(U,rebuild_S),VT)
-        print(E)
+        print(S)
         print('------------------------------------------------------')
 
         match_points1 = pts_ransac1[inliers]

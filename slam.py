@@ -3,12 +3,13 @@ import cv2
 import numpy as np
 from frame import Frame
 from skimage.measure import ransac 
-from skimage.transform import EssentialMatrixTransform,FundamentalMatrixTransform
+from skimage.transform import FundamentalMatrixTransform,EssentialMatrixTransform
 from display import Display2D,Display3D
 import sys
 import pypangolin as pangolin
 import OpenGL.GL as gl
 from map import Map
+import helper
 
 W = 640
 H = 400
@@ -19,6 +20,9 @@ class Slam:
         self.F = F
         self.W = W
         self.H = H
+        self.K = np.array([[F, 0, W//2],
+               [0, F, H//2],
+               [0, 0,    1]],dtype=np.float64)
         self.map = Map()
         self.display2D = Display2D(path)
         self.display3D = Display3D(self.W,self.H)
@@ -54,35 +58,28 @@ class Slam:
         ret[:3,3] = T.ravel() 
         return ret
 
+
     def process_frame(self,frame):
         # Not allow none frame
         assert frame is not None    
-        frame = self.Transform(frame)
-        # frame = self.normalize(frame)
-
-        frame = Frame(frame)
-        print('--- Found %d keypoints ---'% len(frame.keyPoints))
-        
-        self.map.frames.append(frame)
-        ret = frame
+        f2 = Frame(self.Transform(frame),self.K)
+        print('--- Found %d keypoints ---'% len(f2.keyPoints))
 
         # Match two frames
         if len(self.map.frames) > 1:
-            f1,f2 = self.map.frames[-2],self.map.frames[-1]
-            match_pts1,match_pts2,f1,f2,E = self.match_frames(f1,f2)
+            f1 = self.map.frames[-1]
+            f2,Rt = self.match_frames(f1,f2)
             f2.img = slam.display2D.annotate2D(f1,f2)
 
-            # Estimate Camara pose
-            RT = self.estimate_pose(f2,E)
-
-            f2.pose = RT 
+            f2.pose = np.dot(Rt,f1.pose)
 
             # reset processed frame to slam frames list
-            self.map.frames[-1] = f2
-            self.map.frames[-2] = f1
-            ret = f2
+            self.map.frames.append(f2)
+        else:
+            self.map.frames.append(f2)
 
-        return ret
+
+        return f2
 
     def match_frames(self,f1,f2):
         bf_matcher = cv2.BFMatcher(cv2.NORM_HAMMING2,crossCheck=True)
@@ -109,14 +106,12 @@ class Slam:
         pts_ransac1 = np.array(pts_ransac1)
         pts_ransac2 = np.array(pts_ransac2)
 
-
         model, inliers =ransac(data=[pts_ransac1,pts_ransac2],
                                model_class=EssentialMatrixTransform,
                                # model_class=FundamentalMatrixTransform,
                                min_samples=8,
                                residual_threshold=1,
                                max_trials=1000,
-                               random_state=None
                                )
 
         print('-------------- Essential matrix -----------------------')
@@ -126,7 +121,7 @@ class Slam:
                               [0,S[1],0],
                               [0,  0 ,0]])
         E = np.dot(np.dot(U,rebuild_S),VT)
-        print(S)
+        print(E)
         print('------------------------------------------------------')
 
         match_points1 = pts_ransac1[inliers]
@@ -135,8 +130,16 @@ class Slam:
         # build cv2.KeyPoint list in each frame
         f1.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points1]
         f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
-        return [match_points1,match_points2,f1,f2,E]
+        
+        # recover pose
+        E = cv2.findEssentialMat(match_points1,match_points2,self.K,cv2.RANSAC)
+        print(E[0])
+        U,S,VT = np.linalg.svd(E[0])
+        _,R,T,mask_match = cv2.recoverPose(E[0], match_points1, match_points2)
 
+        RT = helper.poseRt(R,T.T)
+
+        return [f2,RT]
 
 if __name__ == '__main__':
     F = sys.argv[1]

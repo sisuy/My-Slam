@@ -57,8 +57,12 @@ class Display3D:
         gl.glEnable(gl.GL_BLEND)
 
         # Viewer, size = W*H
-        self.scam = pangolin.OpenGlRenderState(pangolin.ProjectionMatrix(self.W,self.H,420,420,320,320,0.2,100),
-                                          pangolin.ModelViewLookAt(2,0,2,0,0,0,pangolin.AxisY))
+        self.scam = pangolin.OpenGlRenderState(
+      pangolin.ProjectionMatrix(self.W, self.H, 420, 420, self.W//2, self.H//2, 0.2, 10000),
+      #pangolin.ModelViewLookAt(-2, 2, -2, 0, 0, 0, pangolin.AxisDirection.AxisY))
+      pangolin.ModelViewLookAt(0, -10, -8, 
+                               0,   0,  0, 
+                               0,  -1,  0))
 
         # set bound and handler
         self.dcam = pangolin.CreateDisplay()
@@ -80,7 +84,6 @@ class Display3D:
         # pangolin.glDrawColouredCube()
         # Draw previous camara with green color
         gl.glColor3f(0,1,0)
-        
         pangolin.DrawCameras(self.state[:-1])
 
         # Draw current camara with red color

@@ -1,15 +1,19 @@
 import numpy as np
 import cv2
+import helper
 
 class Frame():
-    def __init__(self,img):
+    def __init__(self,img,K):
         # Initalize variable
+        self.K = K
+        self.Kinv = np.linalg.inv(self.K)
+
         self.img = img 
         # compute keypoints and descriptors
         self.Add_keyPoints(img)
         # The point matches with last frame
         self.match_points = None
-        # self.pose = np.eye(4)
+
         self.pose = np.eye(4)
         
    
@@ -30,5 +34,7 @@ class Frame():
         kps,des = orb.compute(img,kps)
 
         # add keypoints and descriptors
+        # kps = np.array([(int(kp.pt[0]), int(kp.pt[1])) for kp in kps])
+
         self.keyPoints = kps
         self.descriptors = des

@@ -127,15 +127,6 @@ class Slam:
 
         # recover pose
         E = cv2.findEssentialMat(match_points1,match_points2,self.K,cv2.RANSAC)[0]
-
-        # print('-------------- Essential matrix -----------------------')
-        # # Rebuild the essential matrix
-        # U,S,VT = np.linalg.svd(E)
-        # rebuild_S = np.array([[S[0],0,0],
-        #                       [0,S[1],0],
-        #                       [0,  0 ,0]])
-        # E = np.dot(np.dot(U,rebuild_S),VT)
-        # print('------------------------------------------------------')
         
         _,R,T,mask_match = cv2.recoverPose(E, match_points1, match_points2,self.K)
         RT = helper.poseRt(R,T.T)

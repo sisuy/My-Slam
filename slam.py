@@ -20,9 +20,12 @@ class Slam:
         self.F = F
         self.W = W
         self.H = H
-        self.K = np.array([[F, 0, W//2],
-               [0, F, H//2],
+        self.K = np.array([[F, 0, 640//2],
+               [0, F, 400//2],
                [0, 0,    1]],dtype=np.float64)
+        # self.K = np.array([[F, 0, 640//2],
+        #        [0, F, 400//2],
+        #        [0, 0,    1]],dtype=np.float64)
         self.map = Map()
         self.display2D = Display2D(path)
         self.display3D = Display3D(self.W,self.H)
@@ -108,21 +111,11 @@ class Slam:
 
         model, inliers =ransac(data=[pts_ransac1,pts_ransac2],
                                model_class=EssentialMatrixTransform,
-                               # model_class=FundamentalMatrixTransform,
                                min_samples=8,
                                residual_threshold=1,
                                max_trials=1000,
                                )
 
-        print('-------------- Essential matrix -----------------------')
-        # Rebuild the essential matrix
-        U,S,VT = np.linalg.svd(model.params)
-        rebuild_S = np.array([[S[0],0,0],
-                              [0,S[1],0],
-                              [0,  0 ,0]])
-        E = np.dot(np.dot(U,rebuild_S),VT)
-        print(E)
-        print('------------------------------------------------------')
 
         match_points1 = pts_ransac1[inliers]
         match_points2 = pts_ransac2[inliers]
@@ -131,12 +124,18 @@ class Slam:
         f1.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points1]
         f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
         
-        # recover pose
-        E = cv2.findEssentialMat(match_points1,match_points2,self.K,cv2.RANSAC)
-        print(E[0])
-        U,S,VT = np.linalg.svd(E[0])
-        _,R,T,mask_match = cv2.recoverPose(E[0], match_points1, match_points2)
+        print('-------------- Essential matrix -----------------------')
+        # Rebuild the essential matrix
+        U,S,VT = np.linalg.svd(model.params)
+        print(np.linalg.det(U))
+        rebuild_S = np.array([[S[0],0,0],
+                              [0,S[1],0],
+                              [0,  0 ,0]])
+        print('------------------------------------------------------')
 
+        # recover pose
+        E = cv2.findEssentialMat(pts_ransac1,pts_ransac2,self.K,cv2.RANSAC)
+        _,R,T,mask_match = cv2.recoverPose(E[0], pts_ransac1, pts_ransac2,self.K)
         RT = helper.poseRt(R,T.T)
 
         return [f2,RT]

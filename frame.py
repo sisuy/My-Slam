@@ -13,10 +13,9 @@ class Frame():
         self.Add_keyPoints(img)
         # The point matches with last frame
         self.match_points = None
-
+        # init pose
         self.pose = np.eye(4)
-        
-   
+
     def Add_keyPoints(self,img): 
         orb = cv2.ORB_create(nfeatures=None,
                              scaleFactor =0.9,

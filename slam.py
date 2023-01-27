@@ -124,10 +124,20 @@ class Slam:
         f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
         
 
-        # recover pose
+        # extrac E from the matched points(get better performance than model.params)
         E = cv2.findEssentialMat(match_points1,match_points2,self.K,cv2.RANSAC)[0]
-        
+
+        # rebuild E, clean the noise 
+        U,S,VT = np.linalg.svd(E)
+        S = np.mat([[S[0],0,0],
+                    [0,S[1],0],
+                    [0,0,0]])
+        E = np.dot(np.dot(U,S),VT)
+
+        # recover camera pose from two frames
         _,R,T,mask_match = cv2.recoverPose(E, match_points1, match_points2,self.K)
+
+        # build camera pose from rotation matrix and translation matrix
         RT = helper.poseRt(R,-T.T)
 
         return [f2,RT]

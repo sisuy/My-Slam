@@ -74,14 +74,13 @@ class Slam:
             f2,Rt = self.match_frames(f1,f2)
             f2.img = slam.display2D.annotate2D(f1,f2)
 
-            f2.pose = np.dot(Rt,f1.pose)
+            f2.pose = np.dot(f1.pose,Rt)
+            print('----- pose ---------')
+            print(f2.pose)
+            print('--------------------')
 
-            # reset processed frame to slam frames list
-            self.map.frames.append(f2)
-        else:
-            self.map.frames.append(f2)
-
-
+        # reset processed frame to slam frames list
+        self.map.frames.append(f2)
         return f2
 
     def match_frames(self,f1,f2):
@@ -129,7 +128,7 @@ class Slam:
         E = cv2.findEssentialMat(match_points1,match_points2,self.K,cv2.RANSAC)[0]
         
         _,R,T,mask_match = cv2.recoverPose(E, match_points1, match_points2,self.K)
-        RT = helper.poseRt(R,T.T)
+        RT = helper.poseRt(R,-T.T)
 
         return [f2,RT]
 

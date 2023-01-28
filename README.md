@@ -6,13 +6,21 @@ We use python to code a SLAM(Simultaneous localization and mapping), which is a 
 
 I'm a beginner and learning about computer vision and SLAM. So there might be some problem in our code.
 
-### 1.1 Why Python?
+### 1.1 Example
+
+<img src="assets/example.gif" alt="example" style="zoom: 33%;" />
+
+<img src="assets/image-20230128173032124.png" alt="image-20230128173032124" style="zoom: 25%;" />
+
+<img src="assets/image-20230128172846539.png" alt="image-20230128172846539" style="zoom: 25%;" />
+
+### 1.2 Why Python?
 
 First, I am not a CPP coder, and there is lots of convenient tool which we can use to build python, for example: Pangolin, OpenCV, G2O, Scipy. They contains lots of the API which can process image and Epipolar Geometry problem.
 
 Second, we decide to use deeplearning net work to improve the performance in camera pose estimation, keypoints matching and pose graph optimization. 
 
-### 1.2 Current work
+### 1.3 Current work
 
 1. Match the keypoints between two frames
 2. Use ransac algorithm to filter the unmatched keypoints(it seems we have got some good paramters)
@@ -26,8 +34,6 @@ Second, we decide to use deeplearning net work to improve the performance in cam
 2. Get the depth and build the points in 3D
 3. Extract the color of the points and show the points
 4. (Should we add a new class to track the points?)
-
-
 
 ### 1.5 Run the code
 

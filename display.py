@@ -13,24 +13,26 @@ class Display2D():
     def annotate2D(self, frame1, frame2):
         assert frame1 is not None
         assert frame2 is not None
-        assert len(frame1.match_points) == len(frame2.match_points)
+        # assert len(frame1.match_points) == len(frame2.match_points)
+        if frame1.match_points is None:
+            return frame2.img
 
         ret = frame2.img
 
         # Use red circles to annotate the current frames'keypoints
         for i in frame1.match_points:
-            ret = cv2.circle(ret,(int(i.pt[0]),int(i.pt[1])),2,(0,0,255))
+            ret = cv2.circle(ret,(int(i[0]),int(i[1])),2,(0,0,255))
 
 
         # Use green circles to annotate the previous frame's keypoints
         for i in frame2.match_points:
-            ret = cv2.circle(ret,(int(i.pt[0]),int(i.pt[1])),2,(0,255,0))
+            ret = cv2.circle(ret,(int(i[0]),int(i[1])),2,(0,255,0))
 
         # Use blue line to annotate the track of the keypoints
         for i in range(len(frame1.match_points)):
             ret = cv2.line(ret,
-                          (int(round(frame1.match_points[i].pt[0])),int(round(frame1.match_points[i].pt[1]))),
-                          (int(round(frame2.match_points[i].pt[0])),int(round(frame2.match_points[i].pt[1]))),
+                          (int(round(frame1.match_points[i][0])),int(round(frame1.match_points[i][1]))),
+                          (int(round(frame2.match_points[i][0])),int(round(frame2.match_points[i][1]))),
                           (255,0,0), 1) 
         return ret 
 
@@ -81,23 +83,33 @@ class Display3D:
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         self.dcam.Activate(self.scam)
         
-        # pangolin.glDrawColouredCube()
         # Draw previous camara with green color
-        gl.glColor3f(0,1,0)
-        pangolin.DrawCameras(self.state[:-1])
+        if len(self.state[0]) >= 1:
+            gl.glColor3f(0,1,0)
+            pangolin.DrawCameras(self.state[0][:-1])
 
-        # Draw current camara with red color
-        gl.glColor3f(1,0,0)
-        pangolin.DrawCameras(self.state[-1:])
+            # Draw current camara with red color
+            gl.glColor3f(1,0,0)
+            pangolin.DrawCameras(self.state[0][-1:])
 
         # TODO: Draw keypoints
+        if len(self.state[1]) >= 1:
+            gl.glPointSize(2)
+            gl.glColor3f(0,0,1)
+            pangolin.DrawPoints(self.state[1])
 
         pangolin.FinishFrame()
     
     def load_display(self,map):
         poses = []
+        points = []
         # Add camara poses
         for f in map.frames:
             if f.pose is not None:
                 poses.append(f.pose)
-        self.q.put(poses)
+        
+        # Add 3D points
+        for p in map.points:
+            points.append(p.location)
+            
+        self.q.put([poses,points])

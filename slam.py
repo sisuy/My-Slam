@@ -20,12 +20,9 @@ class Slam:
         self.F = F
         self.W = W
         self.H = H
-        self.K = np.array([[F, 0, 640//2],
-               [0, F, 400//2],
+        self.K = np.array([[F, 0, W//2],
+               [0, F, H//2],
                [0, 0,    1]],dtype=np.float64)
-        # self.K = np.array([[F, 0, 640//2],
-        #        [0, F, 400//2],
-        #        [0, 0,    1]],dtype=np.float64)
         self.map = Map()
         self.display2D = Display2D(path)
         self.display3D = Display3D(self.W,self.H)
@@ -79,6 +76,21 @@ class Slam:
             print(f2.pose)
             print('--------------------')
 
+            # TODO: turn the pixel location of the keypoints into camera location(use the instrics of the cemera) r u sure?
+            f2.homos = helper.pixielToCamera(self.K,f2.match_points)
+            
+
+            # TODO: Keypoints projection(point 4D)
+            if f1.match_points is not None:
+                points = cv2.triangulatePoints(f2.pose[:3,:],f1.pose[:3,:],f2.homos.T,f1.homos.T)
+                points = points/points[3]
+                points = -points.T
+                
+
+
+                self.map.add_points(points[:3,:])
+        
+
         # reset processed frame to slam frames list
         self.map.frames.append(f2)
         return f2
@@ -120,9 +132,13 @@ class Slam:
         match_points2 = pts_ransac2[inliers]
 
         # build cv2.KeyPoint list in each frame
-        f1.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points1]
-        f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
-        
+        # f1.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points1]
+        # f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
+        f1.match_points = match_points1
+        f2.match_points = match_points2
+
+        f1.homos = helper.pixielToCamera(self.K,match_points1)
+        f2.homos = helper.pixielToCamera(self.K,match_points2)
 
         # extrac E from the matched points(get better performance than model.params)
         E = cv2.findEssentialMat(match_points1,match_points2,self.K,cv2.RANSAC)[0]

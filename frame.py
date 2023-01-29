@@ -15,6 +15,7 @@ class Frame():
         self.match_points = None
         # init pose
         self.pose = np.eye(4)
+        self.homos = None
 
     def Add_keyPoints(self,img): 
         orb = cv2.ORB_create(nfeatures=None,

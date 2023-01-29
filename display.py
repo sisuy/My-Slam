@@ -56,7 +56,7 @@ class Display3D:
         # init pangolin GUI
         pangolin.CreateWindowAndBind('Viewer',self.W,self.H)
         gl.glEnable(gl.GL_DEPTH_TEST)
-        gl.glEnable(gl.GL_BLEND)
+        # gl.glEnable(gl.GL_BLEND)
 
         # Viewer, size = W*H
         self.scam = pangolin.OpenGlRenderState(
@@ -74,6 +74,7 @@ class Display3D:
         self.dcam.Activate(self.scam)
 
     def run(self,q):
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         # load states from queue
         while not self.q.empty():
             self.state = q.get()
@@ -94,15 +95,16 @@ class Display3D:
 
         # TODO: Draw keypoints
         if len(self.state[1]) >= 1:
-            gl.glPointSize(2)
-            gl.glColor3f(0,0,1)
-            pangolin.DrawPoints(self.state[1])
+            gl.glPointSize(3)
+            # gl.glColor3f(1,0,0)
+            pangolin.DrawPoints(self.state[1],np.array(self.state[2])/256)
 
         pangolin.FinishFrame()
     
     def load_display(self,map):
         poses = []
         points = []
+        colors = []
         # Add camara poses
         for f in map.frames:
             if f.pose is not None:
@@ -111,5 +113,6 @@ class Display3D:
         # Add 3D points
         for p in map.points:
             points.append(p.location)
+            colors.append(p.color)
             
-        self.q.put([poses,points])
+        self.q.put([poses,points,colors])

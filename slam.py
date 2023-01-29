@@ -69,7 +69,6 @@ class Slam:
         if len(self.map.frames) > 1:
             f1 = self.map.frames[-1]
             f2,Rt = self.match_frames(f1,f2)
-            f2.img = slam.display2D.annotate2D(f1,f2)
 
             f2.pose = np.dot(f1.pose,Rt)
             print('----- pose ---------')
@@ -83,14 +82,13 @@ class Slam:
             # TODO: Keypoints projection(point 4D)
             if f1.match_points is not None:
                 points = cv2.triangulatePoints(f2.pose[:3,:],f1.pose[:3,:],f2.homos.T,f1.homos.T)
-                points = points/points[3]
-                points = -points.T
-                
+                points = -points/points[3]
+                # pl2 = np.dot(f2.pose, points)
+                colors = helper.extractColor(f2.img,f2.match_points)
 
+                self.map.add_points(points[:3,:].T,colors)
 
-                self.map.add_points(points[:3,:])
-        
-
+            f2.img = slam.display2D.annotate2D(f1,f2)
         # reset processed frame to slam frames list
         self.map.frames.append(f2)
         return f2

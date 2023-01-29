@@ -19,15 +19,13 @@ def toHomogeneous(points):
   return ret
 
 def pixielToCamera(K,points):
-  # points = toHomogeneous(points)
   ret = []
   for pt in points:
     p = np.array([0,0],dtype=float)
     p[0] = (pt[0] - K[0,2])/K[0,0]
     p[1] = (pt[1] - K[1,2])/K[1,1]
-    # p[0] = (pt[0] - K[0,2])*K[0,0]
-    # p[1] = (pt[1] - K[1,2])*K[1,1]
     ret.append(p)
+
   return np.array(ret)
 
 def extractColor(img,points):

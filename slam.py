@@ -82,11 +82,9 @@ class Slam:
             # TODO: Keypoints projection(point 4D)
             if f1.match_points is not None:
                 points = cv2.triangulatePoints(f2.pose[:3,:],f1.pose[:3,:],f2.homos.T,f1.homos.T)
-                points = -points/points[3]
-                # pl2 = np.dot(f2.pose, points)
+                points = (-points/points[3])[:3,:]
                 colors = helper.extractColor(f2.img,f2.match_points)
-
-                self.map.add_points(points[:3,:].T,colors)
+                self.map.add_points(points.T,colors)
 
             f2.img = slam.display2D.annotate2D(f1,f2)
         # reset processed frame to slam frames list
@@ -143,16 +141,16 @@ class Slam:
 
         # rebuild E, clean the noise 
         U,S,VT = np.linalg.svd(E)
-        S = np.mat([[S[0],0,0],
+        S = np.matrix([[S[0],0,0],
                     [0,S[1],0],
                     [0,0,0]])
         E = np.dot(np.dot(U,S),VT)
 
         # recover camera pose from two frames
-        _,R,T,mask_match = cv2.recoverPose(E, match_points1, match_points2,self.K)
+        _,R,T,mask_match = cv2.recoverPose(E, match_points2, match_points1,self.K)
 
         # build camera pose from rotation matrix and translation matrix
-        RT = helper.poseRt(R,-T.T)
+        RT = helper.poseRt(R,T.T)
 
         return [f2,RT]
 

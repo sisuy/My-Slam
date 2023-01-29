@@ -95,8 +95,8 @@ class Display3D:
 
         # TODO: Draw keypoints
         if len(self.state[1]) >= 1:
-            gl.glPointSize(3)
-            # gl.glColor3f(1,0,0)
+            gl.glPointSize(4)
+            gl.glColor3f(1,0,0)
             pangolin.DrawPoints(self.state[1],np.array(self.state[2])/256)
 
         pangolin.FinishFrame()

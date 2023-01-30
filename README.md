@@ -35,7 +35,11 @@ Second, we decide to use deeplearning net work to improve the performance in cam
 3. Extract the color of the points and show the points
 4. (Should we add a new class to track the points?)
 
-### 1.5 Run the code
+### 1.5 What am I doing
+
+Now I am tring to implement a `triangulate` function to do points triangulation, I don't want to use `cv2.triangulatePoints`  to do that(I want get a deeper understanding in the coordinate transform). First, I use the intrinsic of camera(3*3 matrix) to transfer the position of points from pixel coordinate to camera coordinate. Then I use RT matrix to project the points from camera to 4D. According to the principe of homogeneous coordinates, get the 3D location of the points. Still bugs!! I have no ideas where it's wrong.. Maybe I should check the parameters of the instrincs matrix.
+
+### 1.6 Run the code
 
 ```sh
 # ./slam.py camera_focal Video_path

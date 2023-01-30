@@ -75,16 +75,22 @@ class Slam:
             print(f2.pose)
             print('--------------------')
 
-            # TODO: turn the pixel location of the keypoints into camera location(use the instrics of the cemera) r u sure?
-            f2.homos = helper.pixielToCamera(self.K,f2.match_points)
-            
+            f2.homos = helper.toHomogeneous(f2.match_points).T 
+            print(Rt)
+            points = helper.triangulate(self.K,f2.pose[:3,:],f2.match_points)
 
-            # TODO: Keypoints projection(point 4D)
             if f1.match_points is not None:
-                points = cv2.triangulatePoints(f2.pose[:3,:],f1.pose[:3,:],f2.homos.T,f1.homos.T)
-                points = (-points/points[3])[:3,:]
                 colors = helper.extractColor(f2.img,f2.match_points)
-                self.map.add_points(points.T,colors)
+                self.map.add_points(points,colors)
+
+            # # TODO: turn the pixel location of the keypoints into camera location(use the instrics of the cemera) r u sure?
+            # f2.homos = helper.pixielToCamera(self.K,f2.match_points)
+            # # TODO: Keypoints projection(point 4D)
+            # if f1.match_points is not None:
+            #     points = cv2.triangulatePoints(f2.pose[:3,:],f1.pose[:3,:],f2.homos.T,f1.homos.T)
+            #     points = (-points/points[3])[:3,:]
+            #     colors = helper.extractColor(f2.img,f2.match_points)
+            #     self.map.add_points(points.T,colors)
 
             f2.img = slam.display2D.annotate2D(f1,f2)
         # reset processed frame to slam frames list

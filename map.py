@@ -7,6 +7,7 @@ class Map:
     # build Point object according to the information given by input, and add points into the map point list
     def add_points(self,location,colors):
         i = 0
+        self.points = []
         for p in location:
             self.points.append(Point(p,colors[i]))
             i += 1

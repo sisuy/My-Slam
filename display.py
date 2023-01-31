@@ -86,7 +86,6 @@ class Display3D:
         # Draw previous camara with green color
         if len(self.state[0]) >= 1:
             gl.glColor3f(0,1,0)
-            print(np.array(self.state[0][:-1]))
             pangolin.DrawCameras(self.state[0][:-1])
 
             # Draw current camara with red color

@@ -23,6 +23,7 @@ class Slam:
         self.K = np.array([[F, 0, W/2],
                            [0, F, H/2],
                            [0, 0,    1]],dtype=np.float64)
+        self.Kinv = np.linalg.inv(self.K)
         self.map = Map()
         self.display2D = Display2D(path)
         self.display3D = Display3D(self.W,self.H)
@@ -67,12 +68,20 @@ class Slam:
             print(f2.pose)
             print('--------------------')
             
+            # m = helper.normalise(self.Kinv,f2.match_points)
+            # points = helper.triangulate(self.Kinv,Rt,f2.match_points)
+            # colors = helper.extractColor(f2.img,f2.match_points)
+            # self.map.add_points(points,colors)
+            # print(m)
+
             # TODO: Keypoints projection(point 4D)
             if f1.match_points is not None:
-                points = cv2.triangulatePoints(f1.pose[:3,:],f2.pose[:3,:],f1.homos.T,f2.homos.T)
-                points = (points/np.abs(points[3]))[:3,:]
+                points = cv2.triangulatePoints(f2.pose[:3,:],f1.pose[:3,:],
+                                               helper.normalise(self.Kinv,f2.match_points)[:,:2].T,
+                                               helper.normalise(self.Kinv,f1.match_points)[:,:2].T)
+                points = -(points/points[3]).T
                 colors = helper.extractColor(f2.img,f2.match_points)
-                self.map.add_points(points.T,colors)
+                self.map.add_points(points[:,:3],colors)
 
             f2.img = slam.display2D.annotate2D(f1,f2)
         # reset processed frame to slam frames list
@@ -125,7 +134,7 @@ class Slam:
         f2.homos = helper.pixielToCamera(self.K,match_points2)
 
         # extrac E from the matched points(get better performance than model.params)
-        E = cv2.findEssentialMat(match_points1,match_points2,self.K,cv2.RANSAC)[0]
+        E = cv2.findEssentialMat(match_points2,match_points1,self.K,cv2.RANSAC)[0]
 
         # rebuild E, clean the noise 
         U,S,VT = np.linalg.svd(E)

@@ -16,24 +16,16 @@ H = 400
 
 
 class Slam:
-    def __init__(self,W,H,F,intrinsic,extrinsic,path):
+    def __init__(self,W,H,F,path):
         self.F = F
         self.W = W
         self.H = H
-        self.K = np.array([[F, 0, W//2],
-               [0, F, H//2],
-               [0, 0,    1]],dtype=np.float64)
+        self.K = np.array([[F, 0, W/2],
+                           [0, F, H/2],
+                           [0, 0,    1]],dtype=np.float64)
         self.map = Map()
         self.display2D = Display2D(path)
         self.display3D = Display3D(self.W,self.H)
-
-        # Camara Intrinsic and Camara extrinsic
-        self.intrinsic = intrinsic
-        self.extrinsic = extrinsic
-
-
-        # Frames
-        # self.frames = []
 
     def add_points(points):
         points.append(points)
@@ -70,27 +62,17 @@ class Slam:
             f1 = self.map.frames[-1]
             f2,Rt = self.match_frames(f1,f2)
 
-            f2.pose = np.dot(f1.pose,Rt)
+            f2.pose = np.dot(Rt,f1.pose)
             print('----- pose ---------')
             print(f2.pose)
             print('--------------------')
-
-            f2.homos = helper.toHomogeneous(f2.match_points).T 
-            print(Rt)
-            points = helper.triangulate(self.K,f2.pose[:3,:],f2.match_points)
-
+            
+            # TODO: Keypoints projection(point 4D)
             if f1.match_points is not None:
+                points = cv2.triangulatePoints(f1.pose[:3,:],f2.pose[:3,:],f1.homos.T,f2.homos.T)
+                points = (points/np.abs(points[3]))[:3,:]
                 colors = helper.extractColor(f2.img,f2.match_points)
-                self.map.add_points(points,colors)
-
-            # # TODO: turn the pixel location of the keypoints into camera location(use the instrics of the cemera) r u sure?
-            # f2.homos = helper.pixielToCamera(self.K,f2.match_points)
-            # # TODO: Keypoints projection(point 4D)
-            # if f1.match_points is not None:
-            #     points = cv2.triangulatePoints(f2.pose[:3,:],f1.pose[:3,:],f2.homos.T,f1.homos.T)
-            #     points = (-points/points[3])[:3,:]
-            #     colors = helper.extractColor(f2.img,f2.match_points)
-            #     self.map.add_points(points.T,colors)
+                self.map.add_points(points.T,colors)
 
             f2.img = slam.display2D.annotate2D(f1,f2)
         # reset processed frame to slam frames list
@@ -153,17 +135,17 @@ class Slam:
         E = np.dot(np.dot(U,S),VT)
 
         # recover camera pose from two frames
-        _,R,T,mask_match = cv2.recoverPose(E, match_points2, match_points1,self.K)
+        _,R,T,mask = cv2.recoverPose(E, match_points1, match_points2,self.K)
 
         # build camera pose from rotation matrix and translation matrix
-        RT = helper.poseRt(R,T.T)
+        RT = helper.poseRt(R,T)
 
         return [f2,RT]
 
 if __name__ == '__main__':
     F = sys.argv[1]
     path = sys.argv[2]
-    slam = Slam(W,H,F,None,None,path)
+    slam = Slam(W,H,F,path)
 
     # Video Start
     i = 0

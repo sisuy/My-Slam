@@ -63,27 +63,18 @@ class Slam:
             f1 = self.map.frames[-1]
             f2,Rt = self.match_frames(f1,f2)
 
+            f2.Rt = Rt
             f2.pose = np.dot(Rt,f1.pose)
             print('----- pose ---------')
             print(f2.pose)
             print('--------------------')
-            
-            # m = helper.normalise(self.Kinv,f2.match_points)
-            # points = helper.triangulate(self.Kinv,Rt,f2.match_points)
-            # colors = helper.extractColor(f2.img,f2.match_points)
-            # self.map.add_points(points,colors)
-            # print(m)
 
-            # TODO: Keypoints projection(point 4D)
-            if f1.match_points is not None:
-                points = cv2.triangulatePoints(f2.pose[:3,:],f1.pose[:3,:],
-                                               helper.normalise(self.Kinv,f2.match_points)[:,:2].T,
-                                               helper.normalise(self.Kinv,f1.match_points)[:,:2].T)
-                points = -(points/points[3]).T
-                colors = helper.extractColor(f2.img,f2.match_points)
-                self.map.add_points(points[:,:3],colors)
-
+            m = helper.triangulate(self.Kinv,f1.pose.copy(),f2.pose.copy(),
+                                   f1.match_points.copy(),f2.match_points.copy())
+            colors = helper.extractColor(f2.img,f2.match_points)
+            self.map.add_points(m,colors)
             f2.img = slam.display2D.annotate2D(f1,f2)
+
         # reset processed frame to slam frames list
         self.map.frames.append(f2)
         return f2
@@ -125,13 +116,8 @@ class Slam:
         match_points2 = pts_ransac2[inliers]
 
         # build cv2.KeyPoint list in each frame
-        # f1.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points1]
-        # f2.match_points = [cv2.KeyPoint(x = i[0], y = i[1], size = None) for i in match_points2]
         f1.match_points = match_points1
         f2.match_points = match_points2
-
-        f1.homos = helper.pixielToCamera(self.K,match_points1)
-        f2.homos = helper.pixielToCamera(self.K,match_points2)
 
         # extrac E from the matched points(get better performance than model.params)
         E = cv2.findEssentialMat(match_points2,match_points1,self.K,cv2.RANSAC)[0]

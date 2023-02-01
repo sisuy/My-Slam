@@ -7,6 +7,7 @@ class Frame():
         # Initalize variable
         self.K = K
         self.Kinv = np.linalg.inv(self.K)
+        self.Rt = np.zeros((3,4))
 
         self.img = img 
         # compute keypoints and descriptors

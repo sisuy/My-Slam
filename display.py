@@ -37,7 +37,6 @@ class Display2D():
 
 class Display3D:
     def __init__(self,W,H):
-        print("sadasdasdas init")
         self.state = None # Used to store camera state
         self.W = W
         self.H = H

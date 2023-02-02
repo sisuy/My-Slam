@@ -54,8 +54,11 @@ class Slam:
             print(f2.pose)
             print('--------------------')
 
+            pose1 = f1.pose.copy()
+            pose2 = f2.pose.copy()
+
             # Triangulation
-            m = helper.triangulate(self.Kinv,f1.pose.copy(),f2.pose.copy(),
+            m = helper.triangulate(self.Kinv,pose1,pose2,
                                    f1.matchPoints.copy(),f2.matchPoints.copy())
             helper.filter(self.K,f2.pose,m)
             m /= m[:,3:]

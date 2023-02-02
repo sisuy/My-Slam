@@ -22,6 +22,10 @@ def normalise(Kinv,points):
   return np.array(ret)
 
 def triangulate(Kinv,pose1,pose2,pts1,pts2):
+  # reverte transpose matrix
+  pose1[:,3] = -pose1[:,3]
+  pose2[:,3] = -pose2[:,3]
+
   # normalise the u,v(image) -> x,y(camera coordinate)
   pts1 = normalise(Kinv,pts1) 
   pts2 = normalise(Kinv,pts2) 

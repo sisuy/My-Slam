@@ -3,76 +3,70 @@ import cv2
 import numpy as np
 from frame import Frame
 from skimage.measure import ransac 
-from skimage.transform import FundamentalMatrixTransform,EssentialMatrixTransform
+from skimage.transform import EssentialMatrixTransform
 from display import Display2D,Display3D
 import sys
-import pypangolin as pangolin
-import OpenGL.GL as gl
 from map import Map
 import helper
-
-W = 640
-H = 400
 
 
 class Slam:
     def __init__(self,W,H,F,path):
+        # basic parameters
         self.F = F
         self.W = W
         self.H = H
+
+        # camera matrix
         self.K = np.array([[F, 0, W/2],
                            [0, F, H/2],
                            [0, 0,    1]],dtype=np.float64)
         self.Kinv = np.linalg.inv(self.K)
+
+        # visialization moudle
         self.map = Map()
         self.display2D = Display2D(path)
         self.display3D = Display3D(self.W,self.H)
 
-    def add_points(points):
-        points.append(points)
-
-    def Transform(self,frame):
-        frame = cv2.resize(frame,(W,H))
+    # transform the image according to what you need
+    def Transform(self,img):
+        frame = cv2.resize(img,(W,H))
         return frame 
     
-    def estimate_pose(self,frame,E): 
-        U,D,VT = np.linalg.svd(E) 
-        W = np.array([[0,-1,0], 
-                      [1,0,0],
-                      [0,0,1]])
-        
-        # u3 is U[:,2]
-        T = U[:,2]
-        # Rotation matrix
-        R = np.dot(np.dot(U,W),VT)
-
-        ret = np.eye(4)
-        ret[:3,:3] = R
-        ret[:3,3] = T.ravel() 
-        return ret
-
-
-    def process_frame(self,frame):
+    # process current frame
+    def processFrame(self,frame):
         # Not allow none frame
         assert frame is not None    
         f2 = Frame(self.Transform(frame),self.K)
-        print('--- Found %d keypoints ---'% len(f2.keyPoints))
 
         # Match two frames
         if len(self.map.frames) > 1:
             f1 = self.map.frames[-1]
+            
+            # get rotation matrix and tranpose matrix 
             f2,Rt = self.match_frames(f1,f2)
 
+            # calculate the essential matrix by previousPose * Rt
             f2.Rt = Rt
             f2.pose = np.dot(Rt,f1.pose)
+
             print('----- pose ---------')
             print(f2.pose)
             print('--------------------')
 
+            # Triangulation
             m = helper.triangulate(self.Kinv,f1.pose.copy(),f2.pose.copy(),
-                                   f1.match_points.copy(),f2.match_points.copy())
-            colors = helper.extractColor(f2.img,f2.match_points)
+                                   f1.matchPoints.copy(),f2.matchPoints.copy())
+            helper.filter(self.K,f2.pose,m)
+            m /= m[:,3:]
+            
+            # extrac the color of points
+            colors = helper.extractColor(f2.img,f2.matchPoints)
+
+            # add 3D points into map class
             self.map.add_points(m,colors)
+
+            # annotate the 2D image, circle the feature points and show the track of the points
             f2.img = slam.display2D.annotate2D(f1,f2)
 
         # reset processed frame to slam frames list
@@ -83,12 +77,9 @@ class Slam:
         bf_matcher = cv2.BFMatcher(cv2.NORM_HAMMING2,crossCheck=True)
         matches = bf_matcher.match(f1.descriptors,f2.descriptors)
 
-        # Find good features according to distance
-        good = sorted(matches,key=lambda x:x.distance)[:70]
-
         # Use ransac to filt outliers
-        pts_ransac1 = []
-        pts_ransac2 = []
+        ptsRansac1 = []
+        ptsRansac2 = []
 
         pts1 = []
         pts2 = []
@@ -97,14 +88,14 @@ class Slam:
             pts1.append(f1.keyPoints[i.queryIdx])
             pts2.append(f2.keyPoints[i.trainIdx])
 
-            pts_ransac1.append(f1.keyPoints[i.queryIdx].pt)
-            pts_ransac2.append(f2.keyPoints[i.trainIdx].pt)
+            ptsRansac1.append(f1.keyPoints[i.queryIdx].pt)
+            ptsRansac2.append(f2.keyPoints[i.trainIdx].pt)
 
         # Convert into np.Array
-        pts_ransac1 = np.array(pts_ransac1)
-        pts_ransac2 = np.array(pts_ransac2)
+        ptsRansac1 = np.array(ptsRansac1)
+        ptsRansac2 = np.array(ptsRansac2)
 
-        model, inliers =ransac(data=[pts_ransac1,pts_ransac2],
+        _, inliers =ransac(data=[ptsRansac1,ptsRansac2],
                                model_class=EssentialMatrixTransform,
                                min_samples=8,
                                residual_threshold=1,
@@ -112,25 +103,19 @@ class Slam:
                                )
 
 
-        match_points1 = pts_ransac1[inliers]
-        match_points2 = pts_ransac2[inliers]
+        matchPoints1 = ptsRansac1[inliers]
+        matchPoints2 = ptsRansac2[inliers]
 
         # build cv2.KeyPoint list in each frame
-        f1.match_points = match_points1
-        f2.match_points = match_points2
+        f1.matchPoints = matchPoints1
+        f2.matchPoints = matchPoints2
 
         # extrac E from the matched points(get better performance than model.params)
-        E = cv2.findEssentialMat(match_points2,match_points1,self.K,cv2.RANSAC)[0]
-
-        # rebuild E, clean the noise 
-        U,S,VT = np.linalg.svd(E)
-        S = np.matrix([[S[0],0,0],
-                    [0,S[1],0],
-                    [0,0,0]])
-        E = np.dot(np.dot(U,S),VT)
+        E = cv2.findEssentialMat(matchPoints2,matchPoints1,self.K,cv2.RANSAC)[0]
+        E = helper.rebuildE(E)
 
         # recover camera pose from two frames
-        _,R,T,mask = cv2.recoverPose(E, match_points1, match_points2,self.K)
+        _,R,T,mask = cv2.recoverPose(E, matchPoints1, matchPoints2,self.K)
 
         # build camera pose from rotation matrix and translation matrix
         RT = helper.poseRt(R,T)
@@ -138,26 +123,27 @@ class Slam:
         return [f2,RT]
 
 if __name__ == '__main__':
+    # set the width of the camera to 640 and the height of camera to 400
+    W = 640
+    H = 400
     F = sys.argv[1]
-    path = sys.argv[2]
-    slam = Slam(W,H,F,path)
+    videoPath = sys.argv[2]
+    slam = Slam(W,H,F,videoPath)
 
     # Video Start
     i = 0
-    frames_count = slam.display2D.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    framesCount = slam.display2D.cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
     while(slam.display2D.cap.isOpened()):
         ret, frame = slam.display2D.cap.read()
         if ret is not False:
-            print('*** Frame %d/%d ***' %(i, frames_count))
-            frame = slam.process_frame(frame)
-            slam.display3D.load_display(slam.map)
+            print('*** Frame %d/%d ***' %(i, framesCount))
+            frame = slam.processFrame(frame)
+
+            # 3D display
+            slam.display3D.loadDisplay(slam.map)
+
+            # 2D display
             cv2.imshow('frame',frame.img)
-
-
-            # Press q to exit the video 
-            key = cv2.waitKey(1)
-            if key == ord('q'):
-                cv2.destroyAllWindows()
-                break
+            cv2.waitKey(1)
         i += 1

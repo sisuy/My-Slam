@@ -13,26 +13,25 @@ class Display2D():
     def annotate2D(self, frame1, frame2):
         assert frame1 is not None
         assert frame2 is not None
-        # assert len(frame1.match_points) == len(frame2.match_points)
-        if frame1.match_points is None:
+        if frame1.matchPoints is None:
             return frame2.img
 
         ret = frame2.img
 
         # Use red circles to annotate the current frames'keypoints
-        for i in frame1.match_points:
+        for i in frame1.matchPoints:
             ret = cv2.circle(ret,(int(i[0]),int(i[1])),2,(0,0,255))
 
 
         # Use green circles to annotate the previous frame's keypoints
-        for i in frame2.match_points:
+        for i in frame2.matchPoints:
             ret = cv2.circle(ret,(int(i[0]),int(i[1])),2,(0,255,0))
 
         # Use blue line to annotate the track of the keypoints
-        for i in range(len(frame1.match_points)):
+        for i in range(len(frame1.matchPoints)):
             ret = cv2.line(ret,
-                          (int(round(frame1.match_points[i][0])),int(round(frame1.match_points[i][1]))),
-                          (int(round(frame2.match_points[i][0])),int(round(frame2.match_points[i][1]))),
+                          (int(round(frame1.matchPoints[i][0])),int(round(frame1.matchPoints[i][1]))),
+                          (int(round(frame2.matchPoints[i][0])),int(round(frame2.matchPoints[i][1]))),
                           (255,0,0), 1) 
         return ret 
 
@@ -100,7 +99,7 @@ class Display3D:
 
         pangolin.FinishFrame()
     
-    def load_display(self,map):
+    def loadDisplay(self,map):
         poses = []
         points = []
         colors = []

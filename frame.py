@@ -13,7 +13,7 @@ class Frame():
         # compute keypoints and descriptors
         self.Add_keyPoints(img)
         # The point matches with last frame
-        self.match_points = None
+        self.matchPoints = None
         # init pose
         self.pose = np.eye(4)
         self.homos = None

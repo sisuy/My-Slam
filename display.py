@@ -61,7 +61,7 @@ class Display3D:
         self.scam = pangolin.OpenGlRenderState(
       pangolin.ProjectionMatrix(self.W, self.H, 420, 420, self.W//2, self.H//2, 0.2, 10000),
       pangolin.ModelViewLookAt(0, -10, -8, 
-                               0,   0,  0, 
+                               0,   5,  5, 
                                0,  -1,  0))
 
         # set bound and handler

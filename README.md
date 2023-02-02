@@ -10,9 +10,9 @@ I'm a beginner and learning about computer vision and SLAM. So there might be so
 
 <img src="assets/example.gif" alt="example" style="zoom: 33%;" />
 
-<img src="assets/image-20230128173032124.png" alt="image-20230128173032124" style="zoom: 25%;" />
+<img src="assets/image-20230202183045495.png" alt="image-20230202183045495" style="zoom: 25%;" />
 
-<img src="assets/image-20230128172846539.png" alt="image-20230128172846539" style="zoom: 25%;" />
+
 
 ### 1.2 Why Python?
 
